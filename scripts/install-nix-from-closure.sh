@@ -6,7 +6,10 @@ dest="/nix"
 self="$(dirname "$0")"
 nix="@nix@"
 cacert="@cacert@"
-
+default_channel_url="https://nixos.org/channels/nixpkgs-unstable"
+export CHANNEL_URL="$default_channel_url"
+default_channel_name="nixpkgs"
+export CHANNEL_NAME="$default_channel_name"
 
 if ! [ -e "$self/.reginfo" ]; then
     echo "$0: incomplete installer (.reginfo is missing)" >&2
@@ -37,31 +40,57 @@ elif [ "$(uname -s)" = "Linux" ] && [ -e /run/systemd/system ]; then
     echo "Note: a multi-user installation is possible. See https://nixos.org/nix/manual/#sect-multi-user-installation" >&2
 fi
 
-INSTALL_MODE=no-daemon
-# Trivially handle the --daemon / --no-daemon options
-if [ "x${1:-}" = "x--no-daemon" ]; then
-    INSTALL_MODE=no-daemon
-elif [ "x${1:-}" = "x--daemon" ]; then
-    INSTALL_MODE=daemon
-elif [ "x${1:-}" != "x" ]; then
-    (
-        echo "Nix Installer [--daemon|--no-daemon]"
+usage()
+{
+    echo "Nix Installer"
+    echo ""
+    echo "Usage: $(basename "$0") [options]"
+    echo ""
+    echo "Options:"
+    echo ""
+    echo " --daemon:    Installs and configures a background daemon that manages the store,"
+    echo "              providing multi-user support and better isolation for local builds."
+    echo "              Both for security and reproducibility, this method is recommended if"
+    echo "              supported on your platform."
+    echo "              See https://nixos.org/nix/manual/#sect-multi-user-installation"
+    echo ""
+    echo " --no-daemon: Simple, single-user installation that does not require root and is"
+    echo "              trivial to uninstall."
+    echo "              (default)"
+    echo ""
+    echo " --channel=URL:"
+    echo "              The Nix channel to get expressions from. If URL is"
+    echo "              empty, no channel will be registered."
+    echo "              Default: $default_channel_url"
+    echo ""
+    echo " --channel-name=NAME:"
+    echo "              Optional name to give the Nix channel."
+    echo "              Default: $default_channel_name"
+}
 
-        echo "Choose installation method."
-        echo ""
-        echo " --daemon:    Installs and configures a background daemon that manages the store,"
-        echo "              providing multi-user support and better isolation for local builds."
-        echo "              Both for security and reproducibility, this method is recommended if"
-        echo "              supported on your platform."
-        echo "              See https://nixos.org/nix/manual/#sect-multi-user-installation"
-        echo ""
-        echo " --no-daemon: Simple, single-user installation that does not require root and is"
-        echo "              trivial to uninstall."
-        echo "              (default)"
-        echo ""
-    ) >&2
-    exit
-fi
+INSTALL_MODE=no-daemon
+
+# Parse arguments
+for arg in "$@"; do
+    case "$arg" in
+        --daemon)
+            INSTALL_MODE=daemon
+            ;;
+        --no-daemon)
+            INSTALL_MODE=no-daemon
+            ;;
+        --channel=*)
+            CHANNEL_URL=$(echo "$arg" | cut -d= -f2)
+            ;;
+        --channel-name=*)
+            CHANNEL_NAME=$(echo "$arg" | cut -d= -f2)
+            ;;
+        *)
+            usage >&2
+            exit 0
+            ;;
+    esac
+done
 
 if [ "$INSTALL_MODE" = "daemon" ]; then
     printf '\e[1;31mSwitching to the Daemon-based Installer\e[0m\n'
@@ -133,12 +162,14 @@ if [ -z "$NIX_SSL_CERT_FILE" ] || ! [ -f "$NIX_SSL_CERT_FILE" ]; then
     export NIX_SSL_CERT_FILE="$HOME/.nix-profile/etc/ssl/certs/ca-bundle.crt"
 fi
 
-# Subscribe the user to the Nixpkgs channel and fetch it.
-if ! "$nix/bin/nix-channel" --list | grep -q "^nixpkgs "; then
-    "$nix/bin/nix-channel" --add https://nixos.org/channels/nixpkgs-unstable
-fi
-if [ -z "$_NIX_INSTALLER_TEST" ]; then
-    "$nix/bin/nix-channel" --update nixpkgs
+if [ -n "$CHANNEL_URL" ]; then
+    # Subscribe the user to the Nixpkgs channel and fetch it.
+    if ! "$nix/bin/nix-channel" --list | grep -q "^$CHANNEL_NAME "; then
+        "$nix/bin/nix-channel" --add "$CHANNEL_URL" "$CHANNEL_NAME"
+    fi
+    if [ -z "$_NIX_INSTALLER_TEST" ]; then
+        "$nix/bin/nix-channel" --update "$CHANNEL_NAME"
+    fi
 fi
 
 added=
