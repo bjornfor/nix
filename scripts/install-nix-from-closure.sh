@@ -13,7 +13,7 @@ if ! [ -e $self/.reginfo ]; then
 fi
 
 # macOS support for 10.10 or higher
-if [[ "$(uname -s)" = "Darwin" && $(($(sw_vers -productVersion | cut -d '.' -f 2))) -lt 10 ]]; then
+if [ "$(uname -s)" = "Darwin" ] && [ $(($(sw_vers -productVersion | cut -d '.' -f 2))) -lt 10 ]; then
     echo "$0: macOS $(sw_vers -productVersion) is not supported, upgrade to 10.10 or higher"
     exit 1
 fi
