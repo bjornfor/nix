@@ -546,7 +546,7 @@ create_directories() {
 }
 
 place_channel_configuration() {
-    echo "https://nixos.org/channels/nixpkgs-unstable nixpkgs" > "$SCRATCH/.nix-channels"
+    echo "$CHANNEL_URL $CHANNEL_NAME" > "$SCRATCH/.nix-channels"
     _sudo "to set up the default system channel (part 1)" \
           install -m 0664 "$SCRATCH/.nix-channels" "$ROOT_HOME/.nix-channels"
 }
@@ -737,7 +737,7 @@ setup_default_profile() {
     # otherwise it will be lost in environments where sudo doesn't pass
     # all the environment variables by default.
     _sudo "to update the default channel in the default profile" \
-          HOME="$ROOT_HOME" NIX_SSL_CERT_FILE="$NIX_SSL_CERT_FILE" "$NIX_INSTALLED_NIX/bin/nix-channel" --update nixpkgs
+          HOME="$ROOT_HOME" NIX_SSL_CERT_FILE="$NIX_SSL_CERT_FILE" "$NIX_INSTALLED_NIX/bin/nix-channel" --update "$CHANNEL_NAME"
 }
 
 
@@ -783,7 +783,9 @@ main() {
     create_build_group
     create_build_users
     create_directories
-    place_channel_configuration
+    if [ "x$CHANNEL_URL" != x ]; then
+        place_channel_configuration
+    fi
     install_from_extracted_nix
 
     configure_shell_profile
