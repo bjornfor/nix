@@ -7,4 +7,3 @@ HOME=$home $SHELL -e -c ". ../scripts/nix-profile.sh"
 HOME=$home $SHELL -e -c ". ../scripts/nix-profile.sh" # test idempotency
 
 [ -L $home/.nix-profile ]
-[ -e $home/.nix-channels ]
