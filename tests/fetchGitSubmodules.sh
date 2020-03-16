@@ -42,6 +42,21 @@ pathWithoutSubmodules=$(nix eval --raw "(builtins.fetchGit { url = file://$rootR
 pathWithSubmodules=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; rev = \"$rev\"; submodules = true; }).outPath")
 pathWithSubmodulesAgain=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; rev = \"$rev\"; submodules = true; }).outPath")
 
+r1=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; rev = \"$rev\"; }).outPath")
+r2=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; rev = \"$rev\"; submodules = false; }).outPath")
+r3=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; rev = \"$rev\"; submodules = true; }).outPath")
+
+[[ $r1 == $r2 ]]
+[[ $r2 != $r3 ]]
+
+r4=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; ref = \"refs/heads/master\"; rev = \"$rev\"; }).outPath")
+r5=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; ref = \"refs/heads/master\"; rev = \"$rev\"; submodules = false; }).outPath")
+r6=$(nix eval --raw "(builtins.fetchGit { url = file://$rootRepo; ref = \"refs/heads/master\"; rev = \"$rev\"; submodules = true; }).outPath")
+
+[[ $r1 == $r4 ]]
+[[ $r4 == $r5 ]]
+[[ $r3 == $r6 ]]
+
 # The resulting store path cannot be the same.
 [[ $pathWithoutSubmodules != $pathWithSubmodules ]]
 
