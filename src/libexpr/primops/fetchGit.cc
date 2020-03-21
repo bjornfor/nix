@@ -187,7 +187,7 @@ GitInfo exportGit(ref<Store> store, const std::string & uri,
         // exists, see FIXME above) so use a big hammer and fetch everything to
         // ensure we get the rev.
         runProgram("git", true, { "-C", tmpDir, "fetch", "--quiet", "--force",
-                                  "--", cacheDir});
+                                  "--update-head-ok", "--", cacheDir, "refs/*:refs/*" });
 
         runProgram("git", true, { "-C", tmpDir, "checkout", "--quiet", gitInfo.rev });
         runProgram("git", true, { "-C", tmpDir, "remote", "add", "origin", uri });
